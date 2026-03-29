@@ -43,8 +43,8 @@ with st.sidebar:
         st.rerun()
 
 # ── タブ ──────────────────────────────────────────────────────
-tab_search, tab_crawl, tab_list = st.tabs(
-    ["🔍 検索", "🤖 クローラー", "📋 一覧"]
+tab_search, tab_crawl, tab_list, tab_stats = st.tabs(
+    ["🔍 検索", "🤖 クローラー", "📋 一覧", "📊 統計"]
 )
 
 # ── 検索タブ ───────────────────────────────────────────────────
@@ -179,6 +179,24 @@ with tab_list:
                 with col1: st.caption(f"語数：{page.get('word_count', 0)}")
                 with col2: st.caption(f"作成者：{page.get('author', '不明') or '不明'}")
                 with col3: st.caption(f"カテゴリ：{page.get('category', '未分類') or '未分類'}")
+
+# ── 検索ログタブ ──────────────────────────────────────
+from database import get_search_stats
+
+with tab_stats:
+    st.subheader("📊 検索統計")
+    stats = get_search_stats()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("総検索数", f"{stats['total_searches']} 回")
+    with col2:
+        st.metric("今日の検索数", f"{stats['today_searches']} 回")
+
+    st.subheader("🔑 人気キーワード Top10")
+    for kw in stats["top_keywords"]:
+        st.write(f"**{kw['keyword']}**：{kw['count']} 回")
+
 
 st.divider()
 st.caption("© 2025 PROJECT ZERO — Tech0 Search v1.0 | Powered by TF-IDF")
