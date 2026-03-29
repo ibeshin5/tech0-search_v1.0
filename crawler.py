@@ -70,8 +70,15 @@ def parse_html(html: str, url: str) -> dict:
     # meta description を取得する
     description = ""
     meta = soup.find("meta", attrs={"name": "description"})
-    if meta and meta.get("content"):
+    # 説明：（なし）になるのを修正
+    if meta and meta.get("content", "").strip(): 
+        # descriptionタグがある場合はそのまま使う
         description = meta["content"][:200]
+    else:
+        # descriptionタグがない場合は本文の最初の100文字を使う
+        body_text = soup.get_text(separator=" ", strip=True)
+        description = body_text[:100] + "..." if len(body_text) > 100 else body_text
+
 
     # meta keywords を取得する（カンマ区切り → リストに変換）
     keywords = []
