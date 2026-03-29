@@ -85,10 +85,77 @@ def get_all_pages() -> list:
     return [dict(row) for row in rows]    # sqlite3.Row を辞書に変換して返す
 
 
+# def log_search(query: str, results_count: int, user_id: str = None) -> int:
+#     """
+#     検索ログを記録する（Step7発展課題で実装予定）
+#     現在はスタブ（空の関数）として定義しています。
+#     Step7で実際の記録処理を実装してください。
+#     """
+#     pass  # Step7で実装してください
+
+
+# Level 2：検索ログ機能を実装する
+
 def log_search(query: str, results_count: int, user_id: str = None) -> int:
     """
-    検索ログを記録する（Step7発展課題で実装予定）
-    現在はスタブ（空の関数）として定義しています。
-    Step7で実際の記録処理を実装してください。
+    検索クエリとその結果件数を search_logs テーブルに記録する。
+
+    Args:
+        query        : 検索クエリ
+        results_count: 検索結果の件数
+        user_id      : ユーザーID（省略可能）
+
+    Returns:
+        ログの id
     """
-    pass  # Step7で実装してください
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO search_logs (query, results_count, user_id)
+        VALUES (?, ?, ?)
+    """, (query, results_count, user_id))
+    log_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return log_id
+
+
+def get_search_stats() -> dict:
+    """
+    検索統計を集計して返す（Step 6 の統計タブで使う）。
+
+    Returns:
+        total_searches : 総検索回数
+        today_searches : 今日の検索回数
+        top_keywords   : 人気キーワード Top10 のリスト
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # 総検索数
+    cursor.execute("SELECT COUNT(*) FROM search_logs")
+    total_searches = cursor.fetchone()[0]
+
+    # 今日の検索数（DATE 関数で日付だけ比較）
+    cursor.execute("""
+        SELECT COUNT(*) FROM search_logs
+        WHERE DATE(searched_at) = DATE('now')
+    """)
+    today_searches = cursor.fetchone()[0]
+
+    # 人気キーワード Top10（GROUP BY で集計して件数で並べる）
+    cursor.execute("""
+        SELECT query, COUNT(*) as count
+        FROM search_logs
+        GROUP BY query
+        ORDER BY count DESC
+        LIMIT 10
+    """)
+    top_keywords = [{"keyword": row[0], "count": row[1]} for row in cursor.fetchall()]
+
+    conn.close()
+    return {
+        "total_searches": total_searches,
+        "today_searches": today_searches,
+        "top_keywords": top_keywords,
+    }
